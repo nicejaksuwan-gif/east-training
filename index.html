@@ -254,7 +254,7 @@ body{
           <div class="step-mini" id="mini3"><div class="dot">3</div><span data-th="ผลการสอบ" data-en="Test Result">ผลการสอบ</span></div>
         </div>
       </div>
-      <div class="notice" id="lockText" data-th="กรุณาดูวิดีโอให้ครบอย่างน้อย 90% เพื่อปลดล็อกแบบทดสอบ" data-en="Please watch at least 90% of the video to unlock the test.">กรุณาดูวิดีโอให้ครบอย่างน้อย 90% เพื่อปลดล็อกแบบทดสอบ</div>
+      <div class="notice" id="lockText" data-th="กรุณาดูวิดีโออบรมให้จบเพื่อปลดล็อกแบบทดสอบ" data-en="Please complete the training video to unlock the test.">กรุณาดูวิดีโออบรมให้จบเพื่อปลดล็อกแบบทดสอบ</div>
     </section>
   </aside>
 
@@ -277,9 +277,28 @@ body{
         </div>
 
         <div class="video-area" id="videoArea">
-          <video id="trainingVideo" controls preload="metadata">
-            <source src="training-video.mp4" type="video/mp4">
-          </video>
+          <div id="driveVideoPlaceholder" style="min-height:430px;display:grid;place-items:center;text-align:center;background:#020306;border:1px solid #26344a;border-radius:16px;padding:30px;color:#9fb0c8">
+            <div>
+              <div style="font-size:48px;margin-bottom:12px">🎬</div>
+              <b data-th="กรุณาใส่ URL วิดีโอ Google Drive ใน index.html" data-en="Please add the Google Drive video URL in index.html">กรุณาใส่ URL วิดีโอ Google Drive ใน index.html</b>
+            </div>
+          </div>
+          <iframe id="driveVideoFrame"
+            title="EAST Training Video"
+            allow="autoplay; fullscreen"
+            allowfullscreen
+            style="display:none;width:100%;height:560px;border:0;border-radius:16px;background:#000">
+          </iframe>
+        </div>
+
+        
+        <div id="driveCompleteWrap" style="display:none;margin-top:16px">
+          <button class="primary-btn" id="confirmVideoCompleteBtn"
+            data-th="✓ ฉันดูวิดีโออบรมจบแล้ว"
+            data-en="✓ I have completed the training video">✓ ฉันดูวิดีโออบรมจบแล้ว</button>
+          <div class="notice" data-th="หมายเหตุ: Google Drive ไม่ส่งข้อมูลเปอร์เซ็นต์การรับชมให้ GitHub Pages จึงต้องยืนยันหลังดูวิดีโอจบ" data-en="Note: Google Drive does not provide watch-percentage data to GitHub Pages, so completion must be confirmed after watching.">
+            หมายเหตุ: Google Drive ไม่ส่งข้อมูลเปอร์เซ็นต์การรับชมให้ GitHub Pages จึงต้องยืนยันหลังดูวิดีโอจบ
+          </div>
         </div>
 
         <div class="video-progress-wrap">
@@ -289,7 +308,7 @@ body{
           </div>
           <div class="progress-line"><div class="progress-fill" id="videoFill"></div></div>
           <div class="progress-meta">
-            <span data-th="ดูอย่างน้อย 90% เพื่อปลดล็อกแบบทดสอบ" data-en="Watch at least 90% to unlock the test">ดูอย่างน้อย 90% เพื่อปลดล็อกแบบทดสอบ</span>
+            <span data-th="ดูวิดีโอให้จบเพื่อปลดล็อกแบบทดสอบ" data-en="Complete the video to unlock the test">ดูวิดีโอให้จบเพื่อปลดล็อกแบบทดสอบ</span>
             <span id="unlockState" data-th="🔒 ยังไม่ปลดล็อก" data-en="🔒 Locked">🔒 ยังไม่ปลดล็อก</span>
           </div>
         </div>
@@ -416,6 +435,43 @@ function createRandomQuiz(){
 }
 
 
+
+// ===== Google Drive Video Settings =====
+// วางลิงก์ Share ของ Google Drive ตรงนี้ (ตั้งสิทธิ์ไฟล์เป็น "Anyone with the link")
+const GOOGLE_DRIVE_VIDEO_TH = 'PASTE_GOOGLE_DRIVE_THAI_VIDEO_URL_HERE';
+const GOOGLE_DRIVE_VIDEO_EN = 'PASTE_GOOGLE_DRIVE_ENGLISH_VIDEO_URL_HERE';
+
+function googleDrivePreviewUrl(url){
+  if(!url || url.indexOf('PASTE_GOOGLE_DRIVE_')===0) return '';
+  let id = '';
+  const patterns = [
+    /\/file\/d\/([a-zA-Z0-9_-]+)/,
+    /[?&]id=([a-zA-Z0-9_-]+)/,
+    /\/d\/([a-zA-Z0-9_-]+)/
+  ];
+  for(const p of patterns){
+    const m = url.match(p);
+    if(m){ id=m[1]; break; }
+  }
+  return id ? `https://drive.google.com/file/d/${id}/preview` : url;
+}
+
+function loadLanguageVideo(){
+  const url = lang === 'th' ? GOOGLE_DRIVE_VIDEO_TH : GOOGLE_DRIVE_VIDEO_EN;
+  const preview = googleDrivePreviewUrl(url);
+  const frame = document.getElementById('driveVideoFrame');
+  const placeholder = document.getElementById('driveVideoPlaceholder');
+  if(preview){
+    frame.src = preview;
+    frame.style.display = 'block';
+    placeholder.style.display = 'none';
+  }else{
+    frame.removeAttribute('src');
+    frame.style.display = 'none';
+    placeholder.style.display = 'grid';
+  }
+}
+
 function setLang(l){
   lang=l;
   document.documentElement.lang=l;
@@ -431,6 +487,7 @@ function setLang(l){
   thBtn.classList.toggle('active',l==='th');
   enBtn.classList.toggle('active',l==='en');
   renderQuestions();
+  loadLanguageVideo();
   if(unlocked){
     goQuizBtn.textContent=texts[l].ready;
     unlockState.textContent=texts[l].unlocked;
@@ -468,16 +525,10 @@ heroPlay.onclick=()=>{
   started=true;
   hero.style.display='none';
   videoArea.style.display='block';
-  trainingVideo.play().catch(()=>{});
+  driveCompleteWrap.style.display='block';
+  loadLanguageVideo();
 };
 
-trainingVideo.addEventListener('timeupdate',()=>{
-  if(!trainingVideo.duration)return;
-  const pct=Math.min(100,(trainingVideo.currentTime/trainingVideo.duration)*100);
-  maxVideoPct=Math.max(maxVideoPct,pct);
-  updateVideoProgress(maxVideoPct);
-});
-trainingVideo.addEventListener('ended',()=>updateVideoProgress(100));
 
 function updateVideoProgress(pct){
   pct=Math.round(pct);
@@ -557,6 +608,12 @@ restartBtn.onclick=()=>location.reload();
 
 
 adminUnlockBtn.onclick=showAdminModal;cancelAdminBtn.onclick=hideAdminModal;confirmAdminBtn.onclick=()=>{if(adminPinInput.value===ADMIN_PIN){clearFailedAttempts();hideAdminModal();alert(lang==='th'?'ปลดล็อกสำเร็จ จำนวนครั้งสอบไม่ผ่านถูกรีเซ็ตเป็น 0':'Unlocked successfully. Failed attempts reset to 0.');}else{alert(lang==='th'?'รหัส Admin ไม่ถูกต้อง':'Incorrect Admin PIN.');adminPinInput.select();}};adminModal.addEventListener('click',e=>{if(e.target===adminModal)hideAdminModal();});fullName.addEventListener('change',()=>{if(fullName.value.trim()&&department.value)refreshLockState();});department.addEventListener('change',()=>{if(fullName.value.trim()&&department.value)refreshLockState();});
+
+confirmVideoCompleteBtn.onclick=()=>{
+  updateVideoProgress(100);
+};
+loadLanguageVideo();
+
 </script>
 </body>
 </html>
